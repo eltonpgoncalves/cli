@@ -28,64 +28,134 @@
 package cli
 
 import (
+	"flag"
 	"strings"
 )
 
 type (
-	CommandArgs struct {
-		Args map[string]interface{}
-	}
-
-	CommandAction func(args CommandArgs)
+	CommandAction func(CommandFlags) error
 
 	Commands []*Command
 
 	Command struct {
 		Name        string
-		SmallName   string
 		Description string
-		Action      CommandAction
+		// Flags are not the arguments was given by the user, but the flags that developer sets to this command
+		Flags       CommandFlags
+		action      CommandAction
 		Subcommands Commands
+		flagset     *flag.FlagSet
 	}
 )
 
-func (c *CommandArgs) String(name string) string {
-	return c.Args[name].(string)
-}
-
-func (c *CommandArgs) Bool(name string) bool {
-	return c.Args[name].(bool)
-}
-
-func (c *CommandArgs) Int(name string) int {
-	return c.Args[name].(int)
+func DefaultAction(cmdName string) CommandAction {
+	return func(a CommandFlags) error { Printf(ErrNoAction, cmdName); return nil }
 }
 
 func NewCommand(name string, description string) *Command {
-	minusLen := strings.Count(name, "-")
-	// help -> --help & -help -> --help
-	if minusLen < 2 {
-		name = "--" + name
-	}
-	// --help  -> -h
-	smallName := name[1:3]
-	defaultAction := func(a CommandArgs) {
-		Printf(ErrNoAction, name)
-	}
-	return &Command{name, smallName, description, defaultAction, nil}
+	name = strings.Replace(name, "-", "", -1) //removes all - if present, --help -> help
+	fset := flag.NewFlagSet(name, flag.PanicOnError)
+	return &Command{Name: name, Description: description, Flags: CommandFlags{}, action: DefaultAction(name), flagset: fset}
 }
 
-// GetName  removes all - from the Name, --help -> help
-func (c *Command) GetName() string {
-	return strings.Replace(c.Name, "-", "", -1)
-}
-
-// Add adds a child command (subcommand)
-func (c *Command) Add(subCommand *Command) *Command {
+// Subcommand adds a child command (subcommand)
+func (c *Command) Subcommand(subCommand *Command) *Command {
 	if c.Subcommands == nil {
 		c.Subcommands = Commands{}
 	}
 
 	c.Subcommands = append(c.Subcommands, subCommand)
 	return c
+}
+
+func (c *Command) requestFlagValue(name string, defaultValue interface{}, usage string) interface{} {
+	switch defaultValue.(type) {
+	case int:
+		{
+			valPointer := c.flagset.Int(name, defaultValue.(int), usage)
+
+			// it's not h (-h) for example but it's host, then assign it's alias also
+			if len(name) > 1 {
+				alias := name[0:1]
+				c.flagset.IntVar(valPointer, alias, defaultValue.(int), usage)
+			}
+			return valPointer
+		}
+	case bool:
+		{
+			valPointer := c.flagset.Bool(name, defaultValue.(bool), usage)
+
+			// it's not h (-h) for example but it's host, then assign it's alias also
+			if len(name) > 1 {
+				alias := name[0:1]
+				c.flagset.BoolVar(valPointer, alias, defaultValue.(bool), usage)
+			}
+			return valPointer
+		}
+	default:
+		valPointer := c.flagset.String(name, defaultValue.(string), usage)
+
+		// it's not h (-h) for example but it's host, then assign it's alias also
+		if len(name) > 1 {
+			alias := name[0:1]
+			c.flagset.StringVar(valPointer, alias, defaultValue.(string), usage)
+		}
+
+		return valPointer
+
+	}
+}
+
+func (c *Command) Flag(name string, defaultValue interface{}, usage string) *Command {
+	if c.Flags == nil {
+		c.Flags = CommandFlags{}
+	}
+	valPointer := c.requestFlagValue(name, defaultValue, usage)
+
+	newFlag := &CommandFlag{name, defaultValue, usage, valPointer}
+	c.Flags = append(c.Flags, newFlag)
+	return c
+}
+
+func (c *Command) Action(action CommandAction) *Command {
+	c.action = action
+	return c
+}
+
+// Execute returns true if this command has been executed
+func (c *Command) Execute(parentflagset *flag.FlagSet) bool {
+	var index = -1
+	// check if this command has been called from app's arguments
+	for idx, a := range parentflagset.Args() {
+		if c.Name == a {
+			index = idx + 1
+		}
+	}
+
+	// this command hasn't been called from the user
+	if index == -1 {
+		return false
+	}
+
+	if !c.flagset.Parsed() {
+
+		if err := c.flagset.Parse(parentflagset.Args()[index:]); err != nil {
+			panic("Panic on command.Execute: " + err.Error())
+		}
+	}
+
+	if err := c.Flags.Validate(); err == nil {
+		c.action(c.Flags)
+
+		for idx := range c.Subcommands {
+			if c.Subcommands[idx].Execute(c.flagset) {
+				break
+			}
+
+		}
+	} else {
+		Printf(err.Error())
+	}
+	return true
+
 }

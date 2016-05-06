@@ -28,6 +28,7 @@
 package cli
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"text/template"
@@ -37,6 +38,16 @@ var Output = os.Stdout // the output is the same for all Apps, atm.
 
 func Printf(format string, args ...interface{}) {
 	fmt.Fprintf(Output, format, args...)
+}
+
+func HelpMe(app App) {
+	tmpl, err := template.New(app.Name).Parse(appTmpl)
+	if err != nil {
+		panic("Panic: " + err.Error())
+	}
+
+	tmpl.Execute(Output, app)
+
 }
 
 type App struct {
@@ -60,13 +71,39 @@ func (a *App) Add(cmd *Command) *App {
 	return a
 }
 
+func (a App) help() {
+	HelpMe(a)
+	os.Exit(1)
+}
+
 func (a App) Run() {
-	tmpl, err := template.New("app").Parse(appTmpl)
-	if err != nil {
-		panic(err.Error())
+	flagset := flag.NewFlagSet(a.Name, flag.PanicOnError)
+	flagset.SetOutput(Output)
+
+	if err := flagset.Parse(os.Args); err != nil {
+		a.help()
 	}
 
-	tmpl.Execute(Output, a)
+	if len(flagset.Args()) <= 1 { //for now we only support myapp something -h, no myapp -h - I will fix it tomorrow.
+		a.help()
+	} else {
+		if len(a.Commands) == 0 {
+			Printf("No commands found in this app")
+			return
+		}
+		var ok bool
+		for idx := range a.Commands {
+			if ok = a.Commands[idx].Execute(flagset); ok {
+				break
+			}
+		}
+
+		if !ok {
+			a.help()
+		}
+
+	}
+
 }
 
 func (a *App) Printf(format string, args ...interface{}) {
@@ -84,7 +121,7 @@ VERSION:
 
 COMMANDS:
 {{ range $index, $cmd := .Commands }}
-   {{$cmd.Name }}        {{$cmd.Description}}
+   {{$cmd.Name }} [{{$cmd.Flags.ToString}}]        {{$cmd.Description}}
      {{ range $index, $subcmd := .Subcommands }}
      {{$subcmd.Name}}        {{$subcmd.Description}}
 	 {{ end }}
