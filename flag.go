@@ -47,6 +47,13 @@ func Flag(name string, defaultValue interface{}, usage string) *flag {
 	return &flag{name, defaultValue, usage, nil}
 }
 
+func (f flag) Alias() string {
+	if len(f.Name) > 1 {
+		return f.Name[0:1]
+	}
+	return f.Name
+}
+
 // Get returns a flag by it's name, if flag not found returns nil
 func (c Flags) Get(name string) *flag {
 	for idx, v := range c {
@@ -97,19 +104,19 @@ func (c Flags) IsValid() bool {
 func (c Flags) Validate() error {
 	var notFilled []string
 	for _, v := range c {
-		// if no value given for required flag then it is not valid
-		defaultVal := reflect.ValueOf(v.Default).String()
+		// if no value given (nil) for required flag then it is not valid
+		isRequired := v.Default == nil
 		val := reflect.ValueOf(v.Value).Elem().String()
-		if defaultVal == "" && val == "" {
+		if isRequired && val == "" {
 			notFilled = append(notFilled, v.Name)
 		}
 	}
 
 	if len(notFilled) > 0 {
 		if len(notFilled) == 1 {
-			return fmt.Errorf("Required flag [-%s] is missing", notFilled[0])
+			return fmt.Errorf("Required flag [-%s] is missing.\n", notFilled[0])
 		} else {
-			return fmt.Errorf("Required flags [%s] are missing", strings.Join(notFilled, ","))
+			return fmt.Errorf("Required flags [%s] are missing.\n", strings.Join(notFilled, ","))
 		}
 
 	}
@@ -129,6 +136,9 @@ func (c Flags) ToString() (summary string) {
 }
 
 func requestFlagValue(flagset *goflags.FlagSet, name string, defaultValue interface{}, usage string) interface{} {
+	if defaultValue == nil { // if it's nil then set it to a string because we will get err: interface is nil, not string if we pass a required flag
+		defaultValue = ""
+	}
 	switch defaultValue.(type) {
 	case int:
 		{

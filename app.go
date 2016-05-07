@@ -41,7 +41,11 @@ func Printf(format string, args ...interface{}) {
 }
 
 func HelpMe(app App) {
-	tmpl, err := template.New(app.Name).Parse(appTmpl)
+	tmplStr := appTmpl
+	if len(app.Commands) > 0 {
+		tmplStr += commandsTmpl
+	}
+	tmpl, err := template.New(app.Name).Parse(tmplStr)
 	if err != nil {
 		panic("Panic: " + err.Error())
 	}
@@ -62,13 +66,22 @@ func NewApp(name string, description string, version string) *App {
 	return &App{name, description, version, nil, nil}
 }
 
-// Add adds a  command to the app
-func (a *App) Add(cmd *command) *App {
+// Command adds a  command to the app
+func (a *App) Command(cmd *command) *App {
 	if a.Commands == nil {
 		a.Commands = Commands{}
 	}
 
 	a.Commands = append(a.Commands, cmd)
+	return a
+}
+
+func (a *App) Flag(name string, defaultValue interface{}, usage string) *App {
+	if a.Flags == nil {
+		a.Flags = Flags{}
+	}
+
+	a.Flags = append(a.Flags, &flag{name, defaultValue, usage, nil})
 	return a
 }
 
@@ -80,11 +93,12 @@ func (a App) help() {
 func (a App) Run(appAction Action) {
 	flagset := goflags.NewFlagSet(a.Name, goflags.PanicOnError)
 	flagset.SetOutput(Output)
-
-	//now, get the args and set the flags
-	for idx, arg := range a.Flags {
-		valPointer := requestFlagValue(flagset, arg.Name, arg.Default, arg.Usage)
-		a.Flags[idx].Value = valPointer
+	if a.Flags != nil {
+		//now, get the args and set the flags
+		for idx, arg := range a.Flags {
+			valPointer := requestFlagValue(flagset, arg.Name, arg.Default, arg.Usage)
+			a.Flags[idx].Value = valPointer
+		}
 	}
 	if len(os.Args) < 1 {
 		panic("Please use the app correctly!")
@@ -112,6 +126,9 @@ func (a App) Run(appAction Action) {
 				Printf(err.Error())
 				return
 			}
+		} else {
+			Printf(err.Error())
+			return
 		}
 	}
 
@@ -134,11 +151,14 @@ USAGE:
 
 VERSION:
    {{.Version}}
+
 GLOBAL ARGUMENTS:
 {{ range $idx,$flag := .Flags }}
-   -{{$flag.Name }}        {{$flag.Usage}}
+   -{{$flag.Alias }}        {{$flag.Usage}} (default '{{$flag.Default}}')
 {{ end }}
-COMMANDS:
+`
+
+var commandsTmpl = `COMMANDS:
 {{ range $index, $cmd := .Commands }}
    {{$cmd.Name }} [{{$cmd.Flags.ToString}}]        {{$cmd.Description}}
      {{ range $index, $subcmd := .Subcommands }}
