@@ -28,22 +28,27 @@
 package cli
 
 import (
+	goflags "flag"
 	"fmt"
 	"reflect"
 	"strings"
 )
 
-type CommandFlags []*CommandFlag
+type Flags []*flag
 
-type CommandFlag struct {
+type flag struct { //lowercase in order to have the ability to do cli.Flag(...) instead of cli.NewFlag(...)
 	Name    string
 	Default interface{}
 	Usage   string
 	Value   interface{}
 }
 
+func Flag(name string, defaultValue interface{}, usage string) *flag {
+	return &flag{name, defaultValue, usage, nil}
+}
+
 // Get returns a flag by it's name, if flag not found returns nil
-func (c CommandFlags) Get(name string) *CommandFlag {
+func (c Flags) Get(name string) *flag {
 	for idx, v := range c {
 		if v.Name == name {
 			return c[idx]
@@ -54,7 +59,7 @@ func (c CommandFlags) Get(name string) *CommandFlag {
 }
 
 // String returns the flag's value as string by it's name, if not found returns empty string ""
-func (c CommandFlags) String(name string) string {
+func (c Flags) String(name string) string {
 	f := c.Get(name)
 	if f == nil {
 		return ""
@@ -63,7 +68,7 @@ func (c CommandFlags) String(name string) string {
 }
 
 // Bool returns the flag's value as bool by it's name, if not found returns false
-func (c CommandFlags) Bool(name string) bool {
+func (c Flags) Bool(name string) bool {
 	f := c.Get(name)
 	if f != nil {
 		return *f.Value.(*bool)
@@ -72,7 +77,7 @@ func (c CommandFlags) Bool(name string) bool {
 }
 
 // Int returns the flag's value as int by it's name, if can't parse int then returns -1
-func (c CommandFlags) Int(name string) int {
+func (c Flags) Int(name string) int {
 	f := c.Get(name)
 	if f == nil {
 		return -1
@@ -81,7 +86,7 @@ func (c CommandFlags) Int(name string) int {
 }
 
 // IsValid returns true if flags are valid, otherwise false
-func (c CommandFlags) IsValid() bool {
+func (c Flags) IsValid() bool {
 	if c.Validate() != nil {
 		return false
 	}
@@ -89,7 +94,7 @@ func (c CommandFlags) IsValid() bool {
 }
 
 // Validate returns nil if this flags are valid, otherwise returns an error message
-func (c CommandFlags) Validate() error {
+func (c Flags) Validate() error {
 	var notFilled []string
 	for _, v := range c {
 		// if no value given for required flag then it is not valid
@@ -102,9 +107,9 @@ func (c CommandFlags) Validate() error {
 
 	if len(notFilled) > 0 {
 		if len(notFilled) == 1 {
-			return fmt.Errorf("Command is not valid. Required flag [-%s] is missing", notFilled[0])
+			return fmt.Errorf("Required flag [-%s] is missing", notFilled[0])
 		} else {
-			return fmt.Errorf("Command is not valid. Required flags [%s] are missing", strings.Join(notFilled, ","))
+			return fmt.Errorf("Required flags [%s] are missing", strings.Join(notFilled, ","))
 		}
 
 	}
@@ -112,7 +117,7 @@ func (c CommandFlags) Validate() error {
 
 }
 
-func (c CommandFlags) ToString() (summary string) {
+func (c Flags) ToString() (summary string) {
 	for idx, v := range c {
 		summary += "-" + v.Name
 		if idx < len(c)-1 {
@@ -121,4 +126,42 @@ func (c CommandFlags) ToString() (summary string) {
 	}
 
 	return
+}
+
+func requestFlagValue(flagset *goflags.FlagSet, name string, defaultValue interface{}, usage string) interface{} {
+	switch defaultValue.(type) {
+	case int:
+		{
+			valPointer := flagset.Int(name, defaultValue.(int), usage)
+
+			// it's not h (-h) for example but it's host, then assign it's alias also
+			if len(name) > 1 {
+				alias := name[0:1]
+				flagset.IntVar(valPointer, alias, defaultValue.(int), usage)
+			}
+			return valPointer
+		}
+	case bool:
+		{
+			valPointer := flagset.Bool(name, defaultValue.(bool), usage)
+
+			// it's not h (-h) for example but it's host, then assign it's alias also
+			if len(name) > 1 {
+				alias := name[0:1]
+				flagset.BoolVar(valPointer, alias, defaultValue.(bool), usage)
+			}
+			return valPointer
+		}
+	default:
+		valPointer := flagset.String(name, defaultValue.(string), usage)
+
+		// it's not h (-h) for example but it's host, then assign it's alias also
+		if len(name) > 1 {
+			alias := name[0:1]
+			flagset.StringVar(valPointer, alias, defaultValue.(string), usage)
+		}
+
+		return valPointer
+
+	}
 }

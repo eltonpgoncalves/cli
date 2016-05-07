@@ -28,7 +28,7 @@
 package cli
 
 import (
-	"flag"
+	goflags "flag"
 	"fmt"
 	"os"
 	"text/template"
@@ -55,14 +55,15 @@ type App struct {
 	Description string
 	Version     string
 	Commands    Commands
+	Flags       Flags
 }
 
 func NewApp(name string, description string, version string) *App {
-	return &App{name, description, version, nil}
+	return &App{name, description, version, nil, nil}
 }
 
 // Add adds a  command to the app
-func (a *App) Add(cmd *Command) *App {
+func (a *App) Add(cmd *command) *App {
 	if a.Commands == nil {
 		a.Commands = Commands{}
 	}
@@ -76,32 +77,46 @@ func (a App) help() {
 	os.Exit(1)
 }
 
-func (a App) Run() {
-	flagset := flag.NewFlagSet(a.Name, flag.PanicOnError)
+func (a App) Run(appAction Action) {
+	flagset := goflags.NewFlagSet(a.Name, goflags.PanicOnError)
 	flagset.SetOutput(Output)
 
-	if err := flagset.Parse(os.Args); err != nil {
+	//now, get the args and set the flags
+	for idx, arg := range a.Flags {
+		valPointer := requestFlagValue(flagset, arg.Name, arg.Default, arg.Usage)
+		a.Flags[idx].Value = valPointer
+	}
+	if len(os.Args) < 1 {
+		panic("Please use the app correctly!")
+	}
+	if err := flagset.Parse(os.Args[1:]); err != nil {
 		a.help()
 	}
 
-	if len(flagset.Args()) <= 1 { //for now we only support myapp something -h, no myapp -h - I will fix it tomorrow.
-		a.help()
-	} else {
-		if len(a.Commands) == 0 {
-			Printf("No commands found in this app")
-			return
+	// one question, should after app's action the app continue to the commands or no? like global options to be passed on the commands?
+	// I said no, the app flags will be used only if the user wants to use the App without any commands, so we stop it the user passed app's arguments/flags
+	//first we check for commands, if any command executed then  app action should NOT be executed
+
+	var ok = false
+	for idx := range a.Commands {
+		if ok = a.Commands[idx].Execute(flagset); ok {
+			break
 		}
-		var ok bool
-		for idx := range a.Commands {
-			if ok = a.Commands[idx].Execute(flagset); ok {
-				break
+	}
+
+	if !ok {
+		if err := a.Flags.Validate(); err == nil {
+			if err = appAction(a.Flags); err == nil {
+				ok = true
+			} else {
+				Printf(err.Error())
+				return
 			}
 		}
+	}
 
-		if !ok {
-			a.help()
-		}
-
+	if !ok {
+		a.help()
 	}
 
 }
@@ -114,11 +129,15 @@ var appTmpl = `NAME:
    {{.Name}} - {{.Description}}
 
 USAGE:
-   {{.Name}} command [command options] [arguments...]
+   {{.Name}} [global arguments...]
+   {{.Name}} command [arguments...]
 
 VERSION:
    {{.Version}}
-
+GLOBAL ARGUMENTS:
+{{ range $idx,$flag := .Flags }}
+   -{{$flag.Name }}        {{$flag.Usage}}
+{{ end }}
 COMMANDS:
 {{ range $index, $cmd := .Commands }}
    {{$cmd.Name }} [{{$cmd.Flags.ToString}}]        {{$cmd.Description}}

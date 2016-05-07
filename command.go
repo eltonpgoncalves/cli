@@ -28,38 +28,38 @@
 package cli
 
 import (
-	"flag"
+	goflags "flag"
 	"strings"
 )
 
 type (
-	CommandAction func(CommandFlags) error
+	Action func(Flags) error
 
-	Commands []*Command
+	Commands []*command
 
-	Command struct {
+	command struct { //lowercase in order to have the ability to do cli.Command(...) instead of cli.NewCommand
 		Name        string
 		Description string
 		// Flags are not the arguments was given by the user, but the flags that developer sets to this command
-		Flags       CommandFlags
-		action      CommandAction
+		Flags       Flags
+		action      Action
 		Subcommands Commands
-		flagset     *flag.FlagSet
+		flagset     *goflags.FlagSet
 	}
 )
 
-func DefaultAction(cmdName string) CommandAction {
-	return func(a CommandFlags) error { Printf(ErrNoAction, cmdName); return nil }
+func DefaultAction(cmdName string) Action {
+	return func(a Flags) error { Printf(ErrNoAction, cmdName); return nil }
 }
 
-func NewCommand(name string, description string) *Command {
+func Command(name string, description string) *command {
 	name = strings.Replace(name, "-", "", -1) //removes all - if present, --help -> help
-	fset := flag.NewFlagSet(name, flag.PanicOnError)
-	return &Command{Name: name, Description: description, Flags: CommandFlags{}, action: DefaultAction(name), flagset: fset}
+	fset := goflags.NewFlagSet(name, goflags.PanicOnError)
+	return &command{Name: name, Description: description, Flags: Flags{}, action: DefaultAction(name), flagset: fset}
 }
 
 // Subcommand adds a child command (subcommand)
-func (c *Command) Subcommand(subCommand *Command) *Command {
+func (c *command) Subcommand(subCommand *command) *command {
 	if c.Subcommands == nil {
 		c.Subcommands = Commands{}
 	}
@@ -68,62 +68,24 @@ func (c *Command) Subcommand(subCommand *Command) *Command {
 	return c
 }
 
-func (c *Command) requestFlagValue(name string, defaultValue interface{}, usage string) interface{} {
-	switch defaultValue.(type) {
-	case int:
-		{
-			valPointer := c.flagset.Int(name, defaultValue.(int), usage)
-
-			// it's not h (-h) for example but it's host, then assign it's alias also
-			if len(name) > 1 {
-				alias := name[0:1]
-				c.flagset.IntVar(valPointer, alias, defaultValue.(int), usage)
-			}
-			return valPointer
-		}
-	case bool:
-		{
-			valPointer := c.flagset.Bool(name, defaultValue.(bool), usage)
-
-			// it's not h (-h) for example but it's host, then assign it's alias also
-			if len(name) > 1 {
-				alias := name[0:1]
-				c.flagset.BoolVar(valPointer, alias, defaultValue.(bool), usage)
-			}
-			return valPointer
-		}
-	default:
-		valPointer := c.flagset.String(name, defaultValue.(string), usage)
-
-		// it's not h (-h) for example but it's host, then assign it's alias also
-		if len(name) > 1 {
-			alias := name[0:1]
-			c.flagset.StringVar(valPointer, alias, defaultValue.(string), usage)
-		}
-
-		return valPointer
-
-	}
-}
-
-func (c *Command) Flag(name string, defaultValue interface{}, usage string) *Command {
+func (c *command) Flag(name string, defaultValue interface{}, usage string) *command {
 	if c.Flags == nil {
-		c.Flags = CommandFlags{}
+		c.Flags = Flags{}
 	}
-	valPointer := c.requestFlagValue(name, defaultValue, usage)
+	valPointer := requestFlagValue(c.flagset, name, defaultValue, usage)
 
-	newFlag := &CommandFlag{name, defaultValue, usage, valPointer}
+	newFlag := &flag{name, defaultValue, usage, valPointer}
 	c.Flags = append(c.Flags, newFlag)
 	return c
 }
 
-func (c *Command) Action(action CommandAction) *Command {
+func (c *command) Action(action Action) *command {
 	c.action = action
 	return c
 }
 
 // Execute returns true if this command has been executed
-func (c *Command) Execute(parentflagset *flag.FlagSet) bool {
+func (c *command) Execute(parentflagset *goflags.FlagSet) bool {
 	var index = -1
 	// check if this command has been called from app's arguments
 	for idx, a := range parentflagset.Args() {
