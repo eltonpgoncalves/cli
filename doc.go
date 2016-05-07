@@ -46,7 +46,6 @@ func main() {
 	listenCommand.Flag("port", 8080, "specify a port to listen")
 	listenCommand.Flag("dir", "", "current working directory")
 	listenCommand.Flag("req", nil, "a required flag because nil default given")
-	listenCommand.Flag("key", "", "key file for https")
 
 	app.Run(run)
 }
