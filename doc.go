@@ -39,13 +39,16 @@ import (
 func main() {
 	app := cli.NewApp("httpserver", "converts current directory into http server", "0.0.1")
 
-	app.Flag("directory", "C:/users/myfiles", "specify a current working directory")
+	app.Flag("directory", "C:/users/myfiles", "specify a current working directory") // $executable -d $the_dir, $executable --directory $the_dir
 
-	listenCommand := cli.Command("listen", "starts the server")
-	listenCommand.Flag("host", "127.0.0.1", "specify an address listener")
-	listenCommand.Flag("port", 8080, "specify a port to listen")
-	listenCommand.Flag("dir", "", "current working directory")
-	listenCommand.Flag("req", nil, "a required flag because nil default given")
+	listenCommand := cli.Command("listen", "starts the server") //  $executable listen
+
+	listenCommand.Flag("host", "127.0.0.1", "specify an address listener")      // $executable listen -h, $executable listen --host $the_host
+	listenCommand.Flag("port", 8080, "specify a port to listen")                // $executable listen -p, $executable listen --port $the_port
+	listenCommand.Flag("dir", "", "current working directory")                  // $executable listen -d, $executable listen --dir $the_dir
+	listenCommand.Flag("req", nil, "a required flag because nil default given") // $executable listen -r , $executable listen --req $the_req
+
+	listenCommand.Action(listen)
 
 	app.Run(run)
 }
