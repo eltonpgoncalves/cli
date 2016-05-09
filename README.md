@@ -43,6 +43,8 @@ func listen(args cli.Flags) error {
 
 ```
 
+> Note that --help (or -help) global flag is automatically used and displays help message.
+
 ### Second approach
 
 ```go
@@ -84,11 +86,12 @@ func listen(args cli.Flags) error {
 
 ```
 
+> Note that --help (or -help) global flag is automatically used and displays help message.
 
 
 ## Versioning
 
-Current: **v0.0.1**
+Current: **v0.0.2**
 
 
 Read more about Semantic Versioning 2.0.0

@@ -93,22 +93,30 @@ func (a App) help() {
 func (a App) Run(appAction Action) {
 	flagset := goflags.NewFlagSet(a.Name, goflags.PanicOnError)
 	flagset.SetOutput(Output)
+
 	if a.Flags != nil {
+
 		//now, get the args and set the flags
 		for idx, arg := range a.Flags {
 			valPointer := requestFlagValue(flagset, arg.Name, arg.Default, arg.Usage)
 			a.Flags[idx].Value = valPointer
 		}
 	}
+
 	if len(os.Args) < 1 {
-		panic("Please use the app correctly!")
+		a.help()
 	}
+
+	// if help argument/flag is passed
+	if len(os.Args) > 1 && (os.Args[1] == "help" || os.Args[1] == "-help" || os.Args[1] == "--help") {
+		a.help()
+
+	}
+	// if flag parsing failed, yes we check it after --help.
 	if err := flagset.Parse(os.Args[1:]); err != nil {
 		a.help()
 	}
 
-	// one question, should after app's action the app continue to the commands or no? like global options to be passed on the commands?
-	// I said no, the app flags will be used only if the user wants to use the App without any commands, so we stop it the user passed app's arguments/flags
 	//first we check for commands, if any command executed then  app action should NOT be executed
 
 	var ok = false
@@ -147,6 +155,7 @@ var appTmpl = `NAME:
 
 USAGE:
    {{.Name}} [global arguments...]
+
    {{.Name}} command [arguments...]
 
 VERSION:
