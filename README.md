@@ -1,6 +1,6 @@
 ## CLI
 
-Build small command line apps with ease
+Build small command line apps with ease.
 
 ## Usage
 
@@ -16,8 +16,9 @@ import (
 func main() {
 	app := cli.NewApp("httpserver", "converts current directory into http server", "0.0.1")
 
-	app.Flag("directory", "C:/users/myfiles", "specify a current working directory") // $executable -d $the_dir, $executable --directory $the_dir
+	app.Flag("directory", "C:/users/myfiles", "specify a current working directory") // $executable -d, $executable --directory $the_dir
 
+	// create a command that can be used by more than one app if you want it
 	listenCommand := cli.Command("listen", "starts the server") //  $executable listen
 
 	listenCommand.Flag("host", "127.0.0.1", "specify an address listener")      // $executable listen -h, $executable listen --host $the_host
@@ -26,6 +27,8 @@ func main() {
 	listenCommand.Flag("req", nil, "a required flag because nil default given") // $executable listen -r , $executable listen --req $the_req
 
 	listenCommand.Action(listen)
+
+	app.Command(listenCommand) //register this command to the app.
 
 	app.Run(run)
 }
@@ -111,4 +114,4 @@ Thanks goes to the people who have contributed code to this package, see the
 ## License
 
 This project is licensed under the [BSD 3-Clause License](https://opensource.org/licenses/BSD-3-Clause).
-License can be found [here](https://github.com/kataras/iris/blob/master/LICENSE).
+License can be found [here](https://github.com/kataras/cli/blob/master/LICENSE).

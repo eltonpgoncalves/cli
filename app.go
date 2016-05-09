@@ -42,9 +42,6 @@ func Printf(format string, args ...interface{}) {
 
 func HelpMe(app App) {
 	tmplStr := appTmpl
-	if len(app.Commands) > 0 {
-		tmplStr += commandsTmpl
-	}
 	tmpl, err := template.New(app.Name).Parse(tmplStr)
 	if err != nil {
 		panic("Panic: " + err.Error())
@@ -90,7 +87,16 @@ func (a App) help() {
 	os.Exit(1)
 }
 
+func (a App) HasCommands() bool {
+	if a.Commands != nil && len(a.Commands) > 0 {
+		return true
+	}
+
+	return false
+}
+
 func (a App) Run(appAction Action) {
+
 	flagset := goflags.NewFlagSet(a.Name, goflags.PanicOnError)
 	flagset.SetOutput(Output)
 
@@ -155,9 +161,9 @@ var appTmpl = `NAME:
 
 USAGE:
    {{.Name}} [global arguments...]
-
+{{ if .HasCommands }}
    {{.Name}} command [arguments...]
-
+{{ end }}
 VERSION:
    {{.Version}}
 
@@ -165,12 +171,13 @@ GLOBAL ARGUMENTS:
 {{ range $idx,$flag := .Flags }}
    -{{$flag.Alias }}        {{$flag.Usage}} (default '{{$flag.Default}}')
 {{ end }}
-`
-
-var commandsTmpl = `COMMANDS:
+{{ if .HasCommands }}
+COMMANDS:
 {{ range $index, $cmd := .Commands }}
    {{$cmd.Name }} [{{$cmd.Flags.ToString}}]        {{$cmd.Description}}
      {{ range $index, $subcmd := .Subcommands }}
      {{$subcmd.Name}}        {{$subcmd.Description}}
 	 {{ end }}
-{{ end }}`
+{{ end }}
+{{ end }}
+`
