@@ -2,6 +2,12 @@
 
 Build small command line apps with ease.
 
+## Install
+
+```
+go get -u github.com/kataras/cli
+```
+
 ## Usage
 
 ```go
