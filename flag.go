@@ -132,6 +132,10 @@ func (c Flags) ToString() (summary string) {
 		}
 	}
 
+	if len(summary) > 0 {
+		summary = "[" + summary + "]"
+	}
+
 	return
 }
 

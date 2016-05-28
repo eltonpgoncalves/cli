@@ -178,7 +178,7 @@ GLOBAL ARGUMENTS:
 {{ if .HasCommands }}
 COMMANDS:
 {{ range $index, $cmd := .Commands }}
-   {{$cmd.Name }} [{{$cmd.Flags.ToString}}]        {{$cmd.Description}}
+   {{$cmd.Name }} {{$cmd.Flags.ToString}}        {{$cmd.Description}}
      {{ range $index, $subcmd := .Subcommands }}
      {{$subcmd.Name}}        {{$subcmd.Description}}
 	 {{ end }}
