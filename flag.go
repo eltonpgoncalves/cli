@@ -126,7 +126,7 @@ func (c Flags) Validate() error {
 
 func (c Flags) ToString() (summary string) {
 	for idx, v := range c {
-		summary += "-" + v.Name
+		summary += "-" + v.Alias()
 		if idx < len(c)-1 {
 			summary += ", "
 		}

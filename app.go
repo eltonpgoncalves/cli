@@ -88,11 +88,11 @@ func (a App) help() {
 }
 
 func (a App) HasCommands() bool {
-	if a.Commands != nil && len(a.Commands) > 0 {
-		return true
-	}
+	return a.Commands != nil && len(a.Commands) > 0
+}
 
-	return false
+func (a App) HasFlags() bool {
+	return a.Flags != nil && len(a.Flags) > 0
 }
 
 func (a App) Run(appAction Action) {
@@ -109,7 +109,7 @@ func (a App) Run(appAction Action) {
 		}
 	}
 
-	if len(os.Args) < 1 {
+	if len(os.Args) <= 1 {
 		a.help()
 	}
 
@@ -160,17 +160,21 @@ var appTmpl = `NAME:
    {{.Name}} - {{.Description}}
 
 USAGE:
+{{- if .HasFlags}}
    {{.Name}} [global arguments...]
+{{end -}}
 {{ if .HasCommands }}
    {{.Name}} command [arguments...]
 {{ end }}
 VERSION:
    {{.Version}}
 
+{{- if.HasFlags}}
 GLOBAL ARGUMENTS:
 {{ range $idx,$flag := .Flags }}
    -{{$flag.Alias }}        {{$flag.Usage}} (default '{{$flag.Default}}')
 {{ end }}
+{{end -}}
 {{ if .HasCommands }}
 COMMANDS:
 {{ range $index, $cmd := .Commands }}
