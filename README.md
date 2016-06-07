@@ -52,7 +52,8 @@ func listen(args cli.Flags) error {
 
 ```
 
-> Note that --help (or -help) global flag is automatically used and displays help message.
+> Note that: --help (or -help, help, -h) global flag is automatically used and displays help message.
+
 
 ### Second approach
 
@@ -100,7 +101,7 @@ func listen(args cli.Flags) error {
 
 ## Versioning
 
-Current: **v0.0.2**
+Current: **v0.0.3**
 
 
 Read more about Semantic Versioning 2.0.0

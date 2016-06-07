@@ -99,6 +99,15 @@ func (c *command) Execute(parentflagset *goflags.FlagSet) bool {
 		return false
 	}
 
+	//check if it was help sub command
+	wasHelp := parentflagset.Arg(1) == "-h"
+
+	if wasHelp {
+		// global -help, --help, help, -h now shows all the help for each subcommand and subflags
+		Printf("Please use global '-help' or 'help' without quotes, instead.")
+		return true
+	}
+
 	if !c.flagset.Parsed() {
 
 		if err := c.flagset.Parse(parentflagset.Args()[index:]); err != nil {

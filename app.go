@@ -114,7 +114,7 @@ func (a App) Run(appAction Action) {
 	}
 
 	// if help argument/flag is passed
-	if len(os.Args) > 1 && (os.Args[1] == "help" || os.Args[1] == "-help" || os.Args[1] == "--help") {
+	if len(os.Args) > 1 && (os.Args[1] == "help" || os.Args[1] == "-help" || os.Args[1] == "--help") || os.Args[1] == "-h" {
 		a.help()
 
 	}
@@ -169,7 +169,7 @@ USAGE:
 VERSION:
    {{.Version}}
 
-{{- if.HasFlags}}
+{{ if.HasFlags}}
 GLOBAL ARGUMENTS:
 {{ range $idx,$flag := .Flags }}
    -{{$flag.Alias }}        {{$flag.Usage}} (default '{{$flag.Default}}')
@@ -181,6 +181,9 @@ COMMANDS:
    {{$cmd.Name }} {{$cmd.Flags.ToString}}        {{$cmd.Description}}
      {{ range $index, $subcmd := .Subcommands }}
      {{$subcmd.Name}}        {{$subcmd.Description}}
+	 {{ end }}
+     {{ range $index, $subflag := .Flags }}
+      -{{$subflag.Alias }}        {{$subflag.Usage}} (default '{{$subflag.Default}}')
 	 {{ end }}
 {{ end }}
 {{ end }}

@@ -108,4 +108,4 @@ func listen(args cli.Flags) error {
 
 */
 
-//Note that: --help (or -help) global flag is automatically used and displays help message.
+//Note that: --help (or -help, help, -h) global flag is automatically used and displays help message.
