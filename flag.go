@@ -1,42 +1,17 @@
-// Copyright (c) 2016, Gerasimos Maropoulos
-// All rights reserved.
-//
-// Redistribution and use in source and binary forms, with or without modification,
-// are permitted provided that the following conditions are met:
-//
-// 1. Redistributions of source code must retain the above copyright notice,
-//    this list of conditions and the following disclaimer.
-//
-// 2. Redistributions in binary form must reproduce the above copyright notice,
-//	  this list of conditions and the following disclaimer
-//    in the documentation and/or other materials provided with the distribution.
-//
-// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse
-//    or promote products derived from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER AND CONTRIBUTOR, GERASIMOS MAROPOULOS
-// BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-// ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 package cli
 
 import (
 	goflags "flag"
-	"fmt"
+	"github.com/kataras/go-errors"
 	"reflect"
 	"strings"
 )
 
-type Flags []*flag
+// Flags the flags passed to the command's Action
+type Flags []*Flag
 
-type flag struct { //lowercase in order to have the ability to do cli.Flag(...) instead of cli.NewFlag(...)
+// Flag is the command's action's flag, use it by flags.Get("myflag").Alias()/.Name/.Usage/.Raw/.Value
+type Flag struct {
 	Name    string
 	Default interface{}
 	Usage   string
@@ -44,11 +19,8 @@ type flag struct { //lowercase in order to have the ability to do cli.Flag(...) 
 	Raw     *goflags.FlagSet
 }
 
-func Flag(name string, defaultValue interface{}, usage string, raw *goflags.FlagSet) *flag {
-	return &flag{name, defaultValue, usage, nil, raw}
-}
-
-func (f flag) Alias() string {
+// Alias returns the alias of the flag's name (the first letter)
+func (f Flag) Alias() string {
 	if len(f.Name) > 1 {
 		return f.Name[0:1]
 	}
@@ -56,7 +28,7 @@ func (f flag) Alias() string {
 }
 
 // Get returns a flag by it's name, if flag not found returns nil
-func (c Flags) Get(name string) *flag {
+func (c Flags) Get(name string) *Flag {
 	for idx, v := range c {
 		if v.Name == name {
 			return c[idx]
@@ -67,6 +39,7 @@ func (c Flags) Get(name string) *flag {
 }
 
 // String returns the flag's value as string by it's name, if not found returns empty string ""
+// panics on !string
 func (c Flags) String(name string) string {
 	f := c.Get(name)
 	if f == nil {
@@ -76,6 +49,7 @@ func (c Flags) String(name string) string {
 }
 
 // Bool returns the flag's value as bool by it's name, if not found returns false
+// panics on !bool
 func (c Flags) Bool(name string) bool {
 	f := c.Get(name)
 	if f != nil {
@@ -85,6 +59,7 @@ func (c Flags) Bool(name string) bool {
 }
 
 // Int returns the flag's value as int by it's name, if can't parse int then returns -1
+// panics on !int
 func (c Flags) Int(name string) int {
 	f := c.Get(name)
 	if f == nil {
@@ -101,6 +76,8 @@ func (c Flags) IsValid() bool {
 	return true
 }
 
+var errFlagMissing = errors.New("Required flag [-%s] is missing.")
+
 // Validate returns nil if this flags are valid, otherwise returns an error message
 func (c Flags) Validate() error {
 	var notFilled []string
@@ -115,16 +92,16 @@ func (c Flags) Validate() error {
 
 	if len(notFilled) > 0 {
 		if len(notFilled) == 1 {
-			return fmt.Errorf("Required flag [-%s] is missing.\n", notFilled[0])
-		} else {
-			return fmt.Errorf("Required flags [%s] are missing.\n", strings.Join(notFilled, ","))
+			return errFlagMissing.Format(notFilled[0])
 		}
+		return errFlagMissing.Format(strings.Join(notFilled, ","))
 
 	}
 	return nil
 
 }
 
+// ToString returns all flags in form of string and comma seperated
 func (c Flags) ToString() (summary string) {
 	for idx, v := range c {
 		summary += "-" + v.Alias()

@@ -1,30 +1,3 @@
-// Copyright (c) 2016, Gerasimos Maropoulos
-// All rights reserved.
-//
-// Redistribution and use in source and binary forms, with or without modification,
-// are permitted provided that the following conditions are met:
-//
-// 1. Redistributions of source code must retain the above copyright notice,
-//    this list of conditions and the following disclaimer.
-//
-// 2. Redistributions in binary form must reproduce the above copyright notice,
-//	  this list of conditions and the following disclaimer
-//    in the documentation and/or other materials provided with the distribution.
-//
-// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse
-//    or promote products derived from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER AND CONTRIBUTOR, GERASIMOS MAROPOULOS
-// BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-// ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 package cli
 
 import (
@@ -33,11 +6,14 @@ import (
 )
 
 type (
+	// Action the command's listener
 	Action func(Flags) error
 
-	Commands []*command
+	// Commands just a slice of commands
+	Commands []*Cmd
 
-	command struct { //lowercase in order to have the ability to do cli.Command(...) instead of cli.NewCommand
+	// Cmd is the command struct which contains the command's Name, description, any flags, any subcommands and mostly its action listener
+	Cmd struct {
 		Name        string
 		Description string
 		// Flags are not the arguments was given by the user, but the flags that developer sets to this command
@@ -48,44 +24,73 @@ type (
 	}
 )
 
+var errNoAction = "No action given for %s. Please get help via --help"
+
+// DefaultAction is the default action where no command's action is defined
 func DefaultAction(cmdName string) Action {
-	return func(a Flags) error { Printf(ErrNoAction, cmdName); return nil }
+	return func(a Flags) error { Printf(errNoAction, cmdName); return nil }
 }
 
-func Command(name string, description string) *command {
+// Command builds and returns a new *Cmd, no app-relative.
+// Note that the same command can be used by multiple applications.
+// example:
+// createCmd := cli.Command("create", "creates a project to a given directory").
+// 	Flag("offline", false, "set to true to disable the packages download on each create command").
+// 	Flag("dir", workingDir, "$GOPATH/src/$dir the directory to install the sample package").
+// 	Flag("type", "basic", "creates a project based on the -t package. Currently, available types are 'basic' & 'static'").
+// 	Action(create)
+//
+// 	app = cli.NewApp("iris", "Command line tool for Iris web framework", Version)
+//  app.Command(createCmd) // registers the command to this app
+//
+// returns itself
+func Command(name string, description string) *Cmd {
 	name = strings.Replace(name, "-", "", -1) //removes all - if present, --help -> help
 	fset := goflags.NewFlagSet(name, goflags.PanicOnError)
-	return &command{Name: name, Description: description, Flags: Flags{}, action: DefaultAction(name), flagset: fset}
+	return &Cmd{Name: name, Description: description, Flags: Flags{}, action: DefaultAction(name), flagset: fset}
 }
 
 // Subcommand adds a child command (subcommand)
-func (c *command) Subcommand(subCommand *command) *command {
-	if c.Subcommands == nil {
-		c.Subcommands = Commands{}
-	}
-
+//
+// returns itself
+func (c *Cmd) Subcommand(subCommand *Cmd) *Cmd {
 	c.Subcommands = append(c.Subcommands, subCommand)
 	return c
 }
 
-func (c *command) Flag(name string, defaultValue interface{}, usage string) *command {
+// Flag sets a flag to the command
+// example:
+// createCmd := cli.Command("create", "creates a project to a given directory").
+// 	Flag("dir", "the default value/path is setted here", "$GOPATH/src/$dir the directory to install the sample package").Flag(...).Action(...)
+//
+// returns the Cmd itself
+func (c *Cmd) Flag(name string, defaultValue interface{}, usage string) *Cmd {
 	if c.Flags == nil {
 		c.Flags = Flags{}
 	}
 	valPointer := requestFlagValue(c.flagset, name, defaultValue, usage)
 
-	newFlag := &flag{name, defaultValue, usage, valPointer, c.flagset}
+	newFlag := &Flag{name, defaultValue, usage, valPointer, c.flagset}
 	c.Flags = append(c.Flags, newFlag)
 	return c
 }
 
-func (c *command) Action(action Action) *command {
+// Action is the most important function
+// declares a command's action/listener
+// example:
+// createCmd := cli.Command("create", "creates a project to a given directory").
+// 	Flag("dir", workingDir, "the directory to install the sample package").
+// 	Action(func(flags cli.Flags){ /* here the action */ })
+//
+// returns itself
+func (c *Cmd) Action(action Action) *Cmd {
 	c.action = action
 	return c
 }
 
-// Execute returns true if this command has been executed
-func (c *command) Execute(parentflagset *goflags.FlagSet) bool {
+// Execute calls the Action of the command and the subcommands
+// returns true if this command has been executed successfully
+func (c *Cmd) Execute(parentflagset *goflags.FlagSet) bool {
 	var index = -1
 	// check if this command has been called from app's arguments
 	for idx, a := range parentflagset.Args() {
