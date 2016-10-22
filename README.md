@@ -1,7 +1,6 @@
-
 <p align="center">
-
  <a href="https://github.com/kataras/cli"><img  width="600"  src="https://github.com/kataras/cli/raw/master/logo.png"></a>
+ <br/>
 
  <a href="https://travis-ci.org/kataras/cli"><img src="https://img.shields.io/travis/kataras/cli.svg?style=flat-square" alt="Build Status"></a>
  <a href="https://github.com/kataras/cli/blob/master/LICENSE"><img src="https://img.shields.io/badge/%20license-MIT%20%20License%20-E91E63.svg?style=flat-square" alt="License"></a>
