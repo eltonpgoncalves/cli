@@ -23,7 +23,7 @@ Quick view
 -----------
 
 ```go
-import "github.com/kataras/cli"
+import "gopkg.in/kataras/cli.v0"
 
 func main() {
   cli.NewApp("httpserver", "converts current directory into http server", "0.0.1").
@@ -52,7 +52,7 @@ Installation
 The only requirement is the [Go Programming Language](https://golang.org/dl).
 
 ```bash
-$ go get -u github.com/kataras/cli
+$ go get -u gopkg.in/kataras/cli.v0
 ```
 
 Getting started
@@ -73,7 +73,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/kataras/cli"
+	"gopkg.in/kataras/cli.v0"
 )
 
 func main() {

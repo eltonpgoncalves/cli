@@ -6,7 +6,7 @@ package main
 
 import (
 	"strconv"
-	"github.com/kataras/cli"
+	"gopkg.in/kataras/cli.v0"
 )
 
 func main() {
@@ -48,7 +48,7 @@ package main
 
 import (
 	"strconv"
-	"github.com/kataras/cli"
+	"gopkg.in/kataras/cli.v0"
 )
 
 func main() {

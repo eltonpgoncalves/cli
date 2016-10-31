@@ -90,12 +90,9 @@ func (c Flags) Validate() error {
 		}
 	}
 
+	// check if required flags are not passed,
 	if len(notFilled) > 0 {
-		if len(notFilled) == 1 {
-			return errFlagMissing.Format(notFilled[0])
-		}
 		return errFlagMissing.Format(strings.Join(notFilled, ","))
-
 	}
 	return nil
 
