@@ -2,14 +2,7 @@
  <a href="https://github.com/kataras/cli"><img  width="600"  src="https://github.com/kataras/cli/raw/master/logo.png"></a>
  <br/>
 
- <a href="https://travis-ci.org/kataras/cli"><img src="https://img.shields.io/travis/kataras/cli.svg?style=flat-square" alt="Build Status"></a>
- <a href="https://github.com/kataras/cli/blob/master/LICENSE"><img src="https://img.shields.io/badge/%20license-MIT%20%20License%20-E91E63.svg?style=flat-square" alt="License"></a>
- <a href="https://github.com/kataras/cli/releases"><img src="https://img.shields.io/badge/%20release%20-%200.0.4-blue.svg?style=flat-square" alt="Releases"></a>
- <a href="https://godoc.org/github.com/kataras/cli"><img src="https://img.shields.io/badge/%20docs-reference-5272B4.svg?style=flat-square" alt="Read me docs"></a>
- <br/>
- <a href="https://kataras.rocket.chat/channel/cli"><img src="https://img.shields.io/badge/%20community-chat-00BCD4.svg?style=flat-square" alt="Build Status"></a>
- <a href="https://golang.org"><img src="https://img.shields.io/badge/powered_by-Go-3362c2.svg?style=flat-square" alt="Built with GoLang"></a>
- <a href="#"><img src="https://img.shields.io/badge/platform-All-yellow.svg?style=flat-square" alt="Platforms"></a>
+<a href="https://travis-ci.org/kataras/cli"><img src="https://img.shields.io/travis/kataras/cli.svg?style=flat-square" alt="Build Status"></a><a href="https://github.com/kataras/cli/blob/master/LICENSE"><img src="https://img.shields.io/badge/%20license-MIT%20%20License%20-E91E63.svg?style=flat-square" alt="License"></a> <a href="https://github.com/kataras/cli/releases"><img src="https://img.shields.io/badge/%20release%20-%200.0.4-blue.svg?style=flat-square" alt="Releases"></a> <a href="https://godoc.org/github.com/kataras/cli"><img src="https://img.shields.io/badge/%20docs-reference-5272B4.svg?style=flat-square" alt="Read me docs"></a> <a href="https://kataras.rocket.chat/channel/cli"><img src="https://img.shields.io/badge/%20community-chat-00BCD4.svg?style=flat-square" alt="Build Status"></a> <a href="https://golang.org"><img src="https://img.shields.io/badge/powered_by-Go-3362c2.svg?style=flat-square" alt="Built with GoLang"></a> <a href="#"><img src="https://img.shields.io/badge/platform-All-yellow.svg?style=flat-square" alt="Platforms"></a>
 
 <br/><br/>
 Build command line interfaced applications fast and easy.
