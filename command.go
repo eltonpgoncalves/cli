@@ -53,8 +53,8 @@ func Command(name string, description string) *Cmd {
 // Subcommand adds a child command (subcommand)
 //
 // returns itself
-func (c *Cmd) Subcommand(subCommand *Cmd) *Cmd {
-	c.Subcommands = append(c.Subcommands, subCommand)
+func (c *Cmd) Subcommand(subCommand ...*Cmd) *Cmd {
+	c.Subcommands = append(c.Subcommands, subCommand...)
 	return c
 }
 
